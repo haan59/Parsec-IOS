@@ -36,16 +36,17 @@ jobs:
       - name: Fetch ParsecSDK if missing
         # Uploading the project without git leaves the SDK submodule empty. Same commit the project pins.
         run: |
+          # The commit isn't on any branch, so git fetch refuses it; download the files directly.
           if [ ! -f Frameworks/ParsecSDK.framework/ParsecSDK ]; then
-            rm -rf Frameworks/ParsecSDK.framework
-            mkdir -p Frameworks/ParsecSDK.framework
-            cd Frameworks/ParsecSDK.framework
-            git init -q
-            git fetch -q --depth 1 https://github.com/MalfoyJW/parsec-sdk.git bb336699ee7acd7a4eb0c460410a65c23d7f3879
-            git checkout -q FETCH_HEAD
-            rm -rf .git
+            sdk=https://raw.githubusercontent.com/MalfoyJW/parsec-sdk/bb336699ee7acd7a4eb0c460410a65c23d7f3879
+            dir=Frameworks/ParsecSDK.framework
+            rm -rf "$dir"
+            mkdir -p "$dir/Headers" "$dir/Modules"
+            for f in ParsecSDK Info.plist Modules/module.modulemap Headers/parsec.h; do
+              curl -fsSL -o "$dir/$f" "$sdk/$f"
+            done
           fi
-          ls -la Frameworks/ParsecSDK.framework
+          ls -laR Frameworks/ParsecSDK.framework
       - name: Set Scheme
         id: scheme
         run: |
