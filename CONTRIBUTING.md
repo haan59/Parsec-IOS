@@ -1,6 +1,6 @@
 # Contributing
 
-OpenParsec is maintained in our spare time, and we try to hold our own PRs to the same bar.
+HanParsec is maintained in our spare time, and we try to hold our own PRs to the same bar.
 
 ## Pull requests
 
@@ -18,4 +18,4 @@ Feel free to have agents autocomplete your code, we don't ask you to label it, b
 
 ## Ideas and questions
 
-Please post feature requests and questions in the repo's [Discussions](https://github.com/hugeBlack/OpenParsec/discussions) page, issues are for bugs.
+Please post bugs, feature requests and questions on the repo's [Issues](https://github.com/haan59/Parsec-IOS/issues) page.

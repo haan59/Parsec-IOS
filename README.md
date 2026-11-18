@@ -1,4 +1,4 @@
-# <p align="center">![icon_transparent.png](OpenParsec/Assets.xcassets/IconTransparent.imageset/icon_transparent.png) ![HanParsec](OpenParsec/Assets.xcassets/LogoShadow.imageset/logo_shadow.png)</p>
+# <p align="center">![icon_transparent.png](HanParsec/Assets.xcassets/IconTransparent.imageset/icon_transparent.png) ![HanParsec](HanParsec/Assets.xcassets/LogoShadow.imageset/logo_shadow.png)</p>
 
 HanParsec is a simple, open-source Parsec client for iOS/iPadOS written in Swift using the SwiftUI framework and the Parsec SDK. This project is not affiliated with Parsec.
 
@@ -14,7 +14,7 @@ HanParsec is a simple, open-source Parsec client for iOS/iPadOS written in Swift
 
 These are nightly builds from main, published on the [Releases](https://github.com/haan59/Parsec-IOS/releases) page. The app installs as **Parsec** (`com.haan59dev.parsec`).
 
-HanParsec is a fork of [OpenParsec](https://github.com/hugeBlack/OpenParsec) and adds:
+HanParsec is a fork of [an open-source Parsec client for iOS](https://github.com/hugeBlack/OpenParsec) and adds:
 - Friend requests: see incoming and sent requests, accept, decline, cancel, add friends by `Name#ID` or name, and unfriend.
 - Join with a share link: paste a `parsec.gg` link (🔗 on the Hosts page) to connect with the host's secret.
 
@@ -61,7 +61,7 @@ Microphone passthrough isn't supported by the last public release of the Parsec 
 For sudden lag or a bitrate that hardly goes over 10 Mbps, run Steam Link's network test. Constant spikes in the graph mean a problem with Apple that the app can do little about, see [here](https://github.com/moonlight-stream/moonlight-ios/issues/627) for more discussion.
 
 ## Building
-Clone with `--recursive` for the Parsec SDK submodule, open `OpenParsec.xcodeproj`, set a team and bundle identifier under Signing & Capabilities, and build. CI builds with Xcode 26.2.
+Clone with `--recursive` for the Parsec SDK submodule, open `HanParsec.xcodeproj`, set a team and bundle identifier under Signing & Capabilities, and build. CI builds with Xcode 26.2.
 
 ## Contributing
 See [CONTRIBUTING](CONTRIBUTING.md).

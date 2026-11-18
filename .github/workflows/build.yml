@@ -19,7 +19,7 @@ jobs:
     name: Build using xcodebuild command
     runs-on: macos-latest
     env:
-      scheme: OpenParsec
+      scheme: HanParsec
       archive_path: archive
     outputs:
       scheme: ${{ steps.scheme.outputs.scheme }}
@@ -71,7 +71,7 @@ jobs:
           file_to_build=`echo $file_to_build | awk '{$1=$1;print}'`
           echo "file_to_build=$file_to_build" >> $GITHUB_OUTPUT
       - name: Set Build Number
-        run: /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" OpenParsec/Info.plist
+        run: /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" HanParsec/Info.plist
       - name: Archive
         env:
           scheme: ${{ steps.scheme.outputs.scheme }}

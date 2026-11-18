@@ -360,7 +360,7 @@ struct ParsecView: View {
 						.id(waitingForStream)
 						.transition(.opacity)
 					if waitingForNetwork {
-						Text("OpenParsec will reconnect when you're back online")
+						Text("HanParsec will reconnect when you're back online")
 							.font(.system(size: 13))
 							.foregroundColor(.white)
 							.opacity(0.7)

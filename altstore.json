@@ -1,19 +1,19 @@
 {
-    "name": "Parsec",
+    "name": "HanParsec",
     "subtitle": "Parsec client for iOS/iPadOS",
-    "description": "Parsec client for iOS/iPadOS based on OpenParsec, with friend requests and share link joining.",
-    "iconURL": "https://raw.githubusercontent.com/haan59/Parsec-IOS/main/OpenParsec/Assets.xcassets/IconTransparent.imageset/icon_transparent.png",
-    "headerURL": "https://raw.githubusercontent.com/haan59/Parsec-IOS/main/OpenParsec/Assets.xcassets/LogoShadow.imageset/logo_shadow.png",
+    "description": "Parsec client for iOS/iPadOS with friend requests and share link joining.",
+    "iconURL": "https://raw.githubusercontent.com/haan59/Parsec-IOS/main/HanParsec/Assets.xcassets/IconTransparent.imageset/icon_transparent.png",
+    "headerURL": "https://raw.githubusercontent.com/haan59/Parsec-IOS/main/HanParsec/Assets.xcassets/LogoShadow.imageset/logo_shadow.png",
     "website": "https://github.com/haan59/Parsec-IOS",
     "apps": [
         {
             "beta": true,
-            "name": "Parsec",
+            "name": "HanParsec",
             "bundleIdentifier": "com.haan59dev.parsec",
             "developerName": "haan59",
             "subtitle": "Parsec client for iOS/iPadOS",
-            "localizedDescription": "Parsec client for iOS/iPadOS based on OpenParsec, with friend requests and share link joining.",
-            "iconURL": "https://raw.githubusercontent.com/haan59/Parsec-IOS/main/OpenParsec/Assets.xcassets/IconTransparent.imageset/icon_transparent.png",
+            "localizedDescription": "Parsec client for iOS/iPadOS with friend requests and share link joining.",
+            "iconURL": "https://raw.githubusercontent.com/haan59/Parsec-IOS/main/HanParsec/Assets.xcassets/IconTransparent.imageset/icon_transparent.png",
             "tintColor": "#BB01F0",
             "screenshotURLs": [],
             "versions": [

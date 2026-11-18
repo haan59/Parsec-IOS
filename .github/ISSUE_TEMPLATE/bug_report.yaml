@@ -1,11 +1,11 @@
 name: Bug report
-description: Something in OpenParsec isn't working
+description: Something in HanParsec isn't working
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        Please check the [Troubleshooting](https://github.com/hugeBlack/OpenParsec#troubleshooting) section of the README and Parsec's [error codes page](https://support.parsec.app/hc/en-us/articles/32381281333012-All-Error-Codes) before opening an issue.
+        Please check the [Troubleshooting](https://github.com/haan59/Parsec-IOS#troubleshooting) section of the README and Parsec's [error codes page](https://support.parsec.app/hc/en-us/articles/32381281333012-All-Error-Codes) before opening an issue.
 
   - type: checkboxes
     attributes:
@@ -32,7 +32,7 @@ body:
     validations:
       required: true
     attributes:
-      label: OpenParsec version
+      label: HanParsec version
       description: The version line at the bottom of Settings.
       placeholder: Version 2.0.0-Release (main/abc1234)
 

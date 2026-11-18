@@ -17,7 +17,7 @@ def main():
     build_number = os.environ.get("BUILD_NUMBER", "")
     nightly_link = os.environ.get("NIGHTLY_LINK", "")
 
-    with open("OpenParsec/Info.plist", "rb") as f:
+    with open("HanParsec/Info.plist", "rb") as f:
         version = plistlib.load(f)["CFBundleShortVersionString"]
 
     download_url = f"https://github.com/{repo}/releases/download/nightly/{IPA_NAME}"
