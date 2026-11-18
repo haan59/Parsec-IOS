@@ -24,7 +24,6 @@ struct MainView: View {
 	@State var friendsError: String?
 	@State var showAddFriend = false
 	@State var unfriendTarget: IdentifiableUserInfo?
-	@State var showUnfriendAlert = false
 
 	@State var showJoinLink = false
 
@@ -384,7 +383,10 @@ struct MainView: View {
 											}
 											Button(action: {
 												unfriendTarget = i
-												showUnfriendAlert = true
+												// wait for the context menu to finish closing, or the alert never shows
+												DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+													showBaseAlert = true
+												}
 											}) {
 												Label("Unfriend", systemImage: "person.badge.minus")
 											}
@@ -416,21 +418,24 @@ struct MainView: View {
 						}
 						.padding()
 					}
-					.alert(isPresented: $showUnfriendAlert) {
-						let name = unfriendTarget.map { "\($0.username)#\(String($0.id))" } ?? "this friend"
-						return Alert(title: Text("Unfriend \(name)?"),
-									 message: Text("They won't see or have access to your computers anymore."),
-									 primaryButton: .destructive(Text("Unfriend")) { if let t = unfriendTarget { unfriend(t) } },
-									 secondaryButton: .cancel(Text("Keep Friend")))
-					}
 					.zIndex(page == .friends ? 0 : -1)
 					.disabled(page != .friends)
 					.opacity(page == .friends ? 1 : 0)
 				}
 				.padding(.top, -8)
 				.frame(maxWidth: .infinity)
+				// One alert for the whole page: SwiftUI drops an alert nested inside another one.
 				.alert(isPresented: $showBaseAlert) {
-					Alert(title: Text(baseAlertText))
+					if let target = unfriendTarget {
+						return Alert(title: Text("Unfriend \(target.username)#\(String(target.id))?"),
+									 message: Text("They won't see or have access to your computers anymore."),
+									 primaryButton: .destructive(Text("Unfriend")) {
+										unfriendTarget = nil
+										unfriend(target)
+									 },
+									 secondaryButton: .cancel(Text("Keep Friend")) { unfriendTarget = nil })
+					}
+					return Alert(title: Text(baseAlertText))
 				}
 
 				// Page controls
