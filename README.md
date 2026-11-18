@@ -1,6 +1,6 @@
-# <p align="center">![icon_transparent.png](OpenParsec/Assets.xcassets/IconTransparent.imageset/icon_transparent.png) ![OpenParsec](OpenParsec/Assets.xcassets/LogoShadow.imageset/logo_shadow.png)</p>
+# <p align="center">![icon_transparent.png](OpenParsec/Assets.xcassets/IconTransparent.imageset/icon_transparent.png) ![HanParsec](OpenParsec/Assets.xcassets/LogoShadow.imageset/logo_shadow.png)</p>
 
-OpenParsec is a simple, open-source Parsec client for iOS/iPadOS written in Swift using the SwiftUI framework and the Parsec SDK. This project is not affiliated with Parsec.
+HanParsec is a simple, open-source Parsec client for iOS/iPadOS written in Swift using the SwiftUI framework and the Parsec SDK. This project is not affiliated with Parsec.
 
 ## Downloads
 <p>
@@ -14,15 +14,15 @@ OpenParsec is a simple, open-source Parsec client for iOS/iPadOS written in Swif
 
 These are nightly builds from main, published on the [Releases](https://github.com/haan59/Parsec-IOS/releases) page. The app installs as **Parsec** (`com.haan59dev.parsec`).
 
-This fork of [OpenParsec](https://github.com/hugeBlack/OpenParsec) adds:
+HanParsec is a fork of [OpenParsec](https://github.com/hugeBlack/OpenParsec) and adds:
 - Friend requests: see incoming and sent requests, accept, decline, cancel, add friends by `Name#ID` or name, and unfriend.
 - Join with a share link: paste a `parsec.gg` link (🔗 on the Hosts page) to connect with the host's secret.
 
 The .ipa works with AltStore, SideStore, LiveContainer and TrollStore. LiveContainer does not check sources for new builds. For updates, tap install in the source and replace the existing app to get the newest build.
 
-OpenParsec is built against iOS 14 and later.
+HanParsec is built against iOS 14 and later.
 
-OpenParsec will never support App Store distribution as it bundles the Parsec SDK, which can't be redistributed under App Store policies.
+HanParsec will never support App Store distribution as it bundles the Parsec SDK, which can't be redistributed under App Store policies.
 
 ## Touch Control
 Touch modes can be set in Settings or the stream menu. Touchpad moves the cursor like a laptop trackpad, Direct clicks where the finger lands.
