@@ -4,15 +4,19 @@ OpenParsec is a simple, open-source Parsec client for iOS/iPadOS written in Swif
 
 ## Downloads
 <p>
-<a href="https://stikstore.app/altdirect/?url=https://github.com/hugeBlack/OpenParsec/releases/download/nightly/altstore.json" target="_blank">
+<a href="https://stikstore.app/altdirect/?url=https://github.com/haan59/Parsec-IOS/releases/download/nightly/altstore.json" target="_blank">
    <img src="https://raw.githubusercontent.com/StikStore/altdirect/refs/heads/main/assets/png/AltSource_Blue.png" alt="Add AltSource" width="200">
 </a>
-<a href="https://github.com/hugeBlack/OpenParsec/releases/download/nightly/OpenParsec.ipa" target="_blank">
+<a href="https://github.com/haan59/Parsec-IOS/releases/download/nightly/Parsec.ipa" target="_blank">
    <img src="https://raw.githubusercontent.com/StikStore/altdirect/refs/heads/main/assets/png/Download_Blue.png" alt="Download .ipa" width="200">
 </a>
 </p>
 
-These are nightly builds from main. Tagged versions are on the [Releases](https://github.com/hugeBlack/OpenParsec/releases) page.
+These are nightly builds from main, published on the [Releases](https://github.com/haan59/Parsec-IOS/releases) page. The app installs as **Parsec** (`com.haan59dev.parsec`).
+
+This fork of [OpenParsec](https://github.com/hugeBlack/OpenParsec) adds:
+- Friend requests: see incoming and sent requests, accept, decline, cancel, add friends by `Name#ID` or name, and unfriend.
+- Join with a share link: paste a `parsec.gg` link (🔗 on the Hosts page) to connect with the host's secret.
 
 The .ipa works with AltStore, SideStore, LiveContainer and TrollStore. LiveContainer does not check sources for new builds. For updates, tap install in the source and replace the existing app to get the newest build.
 
