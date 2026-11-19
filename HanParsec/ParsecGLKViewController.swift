@@ -54,13 +54,7 @@ class ParsecGLKViewController: ParsecPlayground {
 		glkViewController.view = glkView
 
 		// Use configured FPS or device max (for ProMotion displays)
-		let fps = SettingsHandler.preferredFramesPerSecond
-		if fps == 0 {
-			// Use device's maximum refresh rate (120Hz on ProMotion iPads)
-			glkViewController.preferredFramesPerSecond = Int(UIScreen.main.maximumFramesPerSecond)
-		} else {
-			glkViewController.preferredFramesPerSecond = fps
-		}
+		glkViewController.preferredFramesPerSecond = SettingsHandler.resolvedFramesPerSecond
 
 		if let parent = viewController {
 			parent.addChild(glkViewController)

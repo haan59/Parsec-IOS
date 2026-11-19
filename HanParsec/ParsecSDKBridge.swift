@@ -396,6 +396,10 @@ class ParsecSDKBridge: ParsecService {
 						DataManager.model.resolutionY = cfg.resolutionY
 						DataManager.model.bitrate = cfg.encoderMaxBitrate
 						DataManager.model.constantFps = cfg.fullFPS
+						if cfg.encoderFPS != DataManager.model.hostFps {
+							appNote("[video] host encodes at \(cfg.encoderFPS) fps")
+							DataManager.model.hostFps = cfg.encoderFPS
+						}
 					}
 					if !self.didSetResolution {
 						self.didSetResolution = true

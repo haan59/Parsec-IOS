@@ -109,6 +109,15 @@ struct SettingsView: View {
 									Toggle("", isOn: $settings.stretchToFill)
 										.frame(width: 80)
 								}
+								CatItem("Orientation") {
+									MultiPicker(selection: $settings.streamOrientation, options:
+									[
+										Choice("Landscape (Auto)", StreamOrientation.landscape),
+										Choice("Landscape Left", StreamOrientation.landscapeLeft),
+										Choice("Landscape Right", StreamOrientation.landscapeRight),
+										Choice("Portrait", StreamOrientation.portrait)
+									])
+								}
 								CatItem("Bitrate") {
 									MultiPicker(selection: $settings.bitrate, options: [Choice("Host Default", 0)] + ParsecResolution.bitrates.map { Choice("\($0) Mbps", $0) })
 								}
@@ -116,6 +125,7 @@ struct SettingsView: View {
 									MultiPicker(selection: $settings.preferredFramesPerSecond, options:
 									[
 										Choice("Auto (Device Max)", 0),
+										Choice("Match Host", -1),
 										Choice("120 FPS", 120),
 										Choice("60 FPS", 60),
 										Choice("30 FPS", 30)

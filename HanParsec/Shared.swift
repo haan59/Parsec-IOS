@@ -73,6 +73,7 @@ class SharedModel: ObservableObject {
 	@Published var bitrate = 0
 	@Published var hostDefaultBitrate = 0
 	@Published var constantFps = false
+	@Published var hostFps = 0 // frame rate the host encodes at, 0 = not reported
 	@Published var output = "none"
 	@Published var displayConfigs: [ParsecDisplayConfig] = []
 	@Published var isBlocked = false
@@ -83,6 +84,7 @@ class SharedModel: ObservableObject {
 		bitrate = 0
 		hostDefaultBitrate = 0
 		constantFps = false
+		hostFps = 0
 		output = "none"
 		displayConfigs = []
 		isBlocked = false

@@ -311,6 +311,7 @@ struct ParsecView: View {
 	@State var showSettings: Bool = false
 	@State var decoderAtOpen: DecoderPref = .h264
 	@State var fpsAtOpen: Int = 0
+	@State var orientationAtOpen: StreamOrientation = .landscape
 	@State var pipAtOpen: Bool = false
 	@State var resolutionAtOpen: ParsecResolution = .client
 	@State var bitrateAtOpen: Int = 0
@@ -511,7 +512,11 @@ struct ParsecView: View {
 				if muted { CParsec.pause(video: false, audio: true) }
 			}
 		}
+		.onChange(of: dataModel.hostFps) { _ in
+			if SettingsHandler.preferredFramesPerSecond == -1 { parsecViewController.applyFrameRate() }
+		}
 		.onAppear(perform: post)
+		.onDisappear { OrientationLock.leaveStream() }
 		.onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ParsecBackgroundDisconnect"))) { _ in
 			if #available(iOS 15.0, *) {
 				if PictureInPictureManager.shared.isPiPActive {
@@ -610,6 +615,21 @@ struct ParsecView: View {
 							.frame(maxWidth: .infinity)
 							.multilineTextAlignment(.center)
 					}
+					if dataModel.hostFps > 0 {
+						Text("Host: \(dataModel.hostFps) FPS")
+							.foregroundColor(.gray)
+							.padding(8)
+							.frame(maxWidth: .infinity)
+							.multilineTextAlignment(.center)
+					}
+					if settingsStore.streamOrientation != .portrait {
+						Button(action: { OrientationLock.rotate180() }) {
+							Text("Rotate 180°")
+								.padding(8)
+								.frame(maxWidth: .infinity)
+								.multilineTextAlignment(.center)
+						}
+					}
 					Button(action: toggleZoom) {
 						Text("Pinch to Zoom: \(zoomEnabled ? "ON" : "OFF")")
 							.padding(8)
@@ -675,6 +695,7 @@ struct ParsecView: View {
 	}
 
 	func post() {
+		OrientationLock.enterStream()
 		ParsecBackgroundManager.shared.onShouldDisconnect = {
 			NotificationCenter.default.post(name: NSNotification.Name("ParsecBackgroundDisconnect"), object: nil)
 		}
@@ -780,6 +801,7 @@ struct ParsecView: View {
 	func openSettings() {
 		decoderAtOpen = SettingsHandler.decoder
 		fpsAtOpen = SettingsHandler.preferredFramesPerSecond
+		orientationAtOpen = SettingsHandler.streamOrientation
 		pipAtOpen = SettingsHandler.enablePiP
 		resolutionAtOpen = SettingsHandler.resolution
 		bitrateAtOpen = SettingsHandler.bitrate
@@ -811,6 +833,7 @@ struct ParsecView: View {
 		if hostConfigChanged { CParsec.updateHostVideoConfig() }
 		if SettingsHandler.bitrate != bitrateAtOpen { applyBitrate() }
 		if SettingsHandler.preferredFramesPerSecond != fpsAtOpen { parsecViewController.applyFrameRate() }
+		if SettingsHandler.streamOrientation != orientationAtOpen { OrientationLock.enterStream() }
 		if SettingsHandler.enablePiP != pipAtOpen {
 			ParsecBackgroundManager.shared.reconnectPending = true
 			disconnect()

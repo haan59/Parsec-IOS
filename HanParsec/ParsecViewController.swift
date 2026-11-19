@@ -205,7 +205,7 @@ class ParsecViewController: UIViewController, UIScrollViewDelegate, ParsecTouchI
 	}
 
 	func applyFrameRate() {
-		let fps = SettingsHandler.preferredFramesPerSecond == 0 ? UIScreen.main.maximumFramesPerSecond : SettingsHandler.preferredFramesPerSecond
+		let fps = SettingsHandler.resolvedFramesPerSecond
 		(glkView as? ParsecMetalViewController)?.metalView.preferredFramesPerSecond = fps
 		(glkView as? ParsecGLKViewController)?.glkViewController.preferredFramesPerSecond = fps
 	}

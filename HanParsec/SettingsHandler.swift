@@ -32,7 +32,8 @@ final class SettingsStore: ObservableObject {
 			"autoConnectOnLaunch": false,
 			"savedZoomEnabled": false,
 			"savedConstantFps": false,
-			"stretchToFill": false
+			"stretchToFill": false,
+			"streamOrientation": StreamOrientation.landscape.rawValue
 		])
 		// values saved back when saving was off would now always apply
 		if defaults.object(forKey: "saveSessionSettings") as? Bool == false {
@@ -177,6 +178,79 @@ final class SettingsStore: ObservableObject {
 		get { defaults.bool(forKey: "stretchToFill") }
 		set { store(newValue, "stretchToFill") }
 	}
+
+	// Orientation the stream screen is locked to.
+	var streamOrientation: StreamOrientation {
+		get { StreamOrientation(rawValue: defaults.integer(forKey: "streamOrientation")) ?? .landscape }
+		set { store(newValue.rawValue, "streamOrientation") }
+	}
+}
+
+enum StreamOrientation: Int {
+	case landscape = 0 // either landscape side, follows the device
+	case landscapeLeft = 1
+	case landscapeRight = 2
+	case portrait = 3
+
+	var mask: UIInterfaceOrientationMask {
+		switch self {
+		case .landscape: return .landscape
+		case .landscapeLeft: return .landscapeLeft
+		case .landscapeRight: return .landscapeRight
+		case .portrait: return .portrait
+		}
+	}
+}
+
+// Locks the interface orientation while streaming. AppDelegate reports `mask` to iOS.
+enum OrientationLock {
+	static var defaultMask: UIInterfaceOrientationMask {
+		UIDevice.current.userInterfaceIdiom == .pad ? .all : .allButUpsideDown
+	}
+	static private(set) var mask: UIInterfaceOrientationMask = defaultMask
+
+	static var currentOrientation: UIInterfaceOrientation {
+		windowScene?.interfaceOrientation ?? .unknown
+	}
+
+	private static var windowScene: UIWindowScene? {
+		UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first
+	}
+
+	static func enterStream() {
+		apply(SettingsHandler.streamOrientation.mask)
+	}
+
+	static func leaveStream() {
+		apply(defaultMask)
+	}
+
+	// Switch between the two landscape sides for this session only.
+	static func rotate180() {
+		let next: UIInterfaceOrientationMask = currentOrientation == .landscapeLeft ? .landscapeRight : .landscapeLeft
+		apply(next)
+	}
+
+	static func apply(_ newMask: UIInterfaceOrientationMask) {
+		mask = newMask
+		guard let scene = windowScene else { return }
+		if #available(iOS 16.0, *) {
+			scene.windows.first?.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
+			scene.requestGeometryUpdate(.iOS(interfaceOrientations: newMask)) { error in
+				appNote("[orientation] \(error.localizedDescription)")
+			}
+		} else {
+			let current = scene.interfaceOrientation
+			if !newMask.contains(UIInterfaceOrientationMask(rawValue: 1 << UInt(current.rawValue))) {
+				let target: UIInterfaceOrientation
+				if newMask.contains(.landscapeRight) { target = .landscapeRight }
+				else if newMask.contains(.landscapeLeft) { target = .landscapeLeft }
+				else { target = .portrait }
+				UIDevice.current.setValue(target.rawValue, forKey: "orientation")
+			}
+			UIViewController.attemptRotationToDeviceOrientation()
+		}
+	}
 }
 
 struct SettingsHandler {
@@ -206,4 +280,17 @@ struct SettingsHandler {
 	static var zoomEnabled: Bool { get { SettingsStore.shared.zoomEnabled } set { SettingsStore.shared.zoomEnabled = newValue } }
 	static var constantFps: Bool { get { SettingsStore.shared.constantFps } set { SettingsStore.shared.constantFps = newValue } }
 	static var stretchToFill: Bool { get { SettingsStore.shared.stretchToFill } set { SettingsStore.shared.stretchToFill = newValue } }
+	static var streamOrientation: StreamOrientation { get { SettingsStore.shared.streamOrientation } set { SettingsStore.shared.streamOrientation = newValue } }
+
+	// preferredFramesPerSecond as a real rate: 0 = device max, -1 = whatever the host encodes at.
+	static var resolvedFramesPerSecond: Int {
+		let deviceMax = UIScreen.main.maximumFramesPerSecond
+		switch preferredFramesPerSecond {
+		case 0: return deviceMax
+		case -1:
+			let host = DataManager.model.hostFps
+			return host > 0 ? min(host, deviceMax) : deviceMax
+		default: return preferredFramesPerSecond
+		}
+	}
 }

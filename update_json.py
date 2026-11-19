@@ -17,8 +17,11 @@ def main():
     build_number = os.environ.get("BUILD_NUMBER", "")
     nightly_link = os.environ.get("NIGHTLY_LINK", "")
 
-    with open("HanParsec/Info.plist", "rb") as f:
-        version = plistlib.load(f)["CFBundleShortVersionString"]
+    # CI passes the version it stamped into the build; the checked-in plist only holds major.minor.
+    version = os.environ.get("APP_VERSION", "")
+    if not version:
+        with open("HanParsec/Info.plist", "rb") as f:
+            version = plistlib.load(f)["CFBundleShortVersionString"]
 
     download_url = f"https://github.com/{repo}/releases/download/nightly/{IPA_NAME}"
     size = os.path.getsize(IPA_NAME) if os.path.exists(IPA_NAME) else 0

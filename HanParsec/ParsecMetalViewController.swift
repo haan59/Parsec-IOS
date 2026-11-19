@@ -21,8 +21,7 @@ class ParsecMetalViewController: ParsecPlayground {
 		metalView.colorPixelFormat = .bgra8Unorm
 		metalView.clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
 		metalView.autoResizeDrawable = false
-		let fps = SettingsHandler.preferredFramesPerSecond
-		metalView.preferredFramesPerSecond = fps == 0 ? UIScreen.main.maximumFramesPerSecond : fps
+		metalView.preferredFramesPerSecond = SettingsHandler.resolvedFramesPerSecond
 		metalView.delegate = metalRenderer
 		ParsecBackgroundManager.shared.glkViewController = metalView
 	}
