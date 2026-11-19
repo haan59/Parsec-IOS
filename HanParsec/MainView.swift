@@ -27,6 +27,8 @@ struct MainView: View {
 
 	@State var showJoinLink = false
 
+	let friendsTimer = Timer.publish(every: 45, on: .main, in: .common).autoconnect()
+
 	// Global vars
 	@State var showBaseAlert: Bool = false
 	@State var baseAlertText: String = ""
@@ -376,7 +378,7 @@ struct MainView: View {
 									.opacity(0.5)
 									.padding(.top, 8)
 								ForEach(friends) { i in
-									friendRow(i) { EmptyView() }
+									friendRow(i, subtitle: friendHostsSubtitle(i)) { friendConnectButton(i) }
 										.contextMenu {
 											Button(action: { UIPasteboard.general.string = "\(i.username)#\(String(i.id))" }) {
 												Label("Copy Name#ID", systemImage: "doc.on.doc")
@@ -454,6 +456,7 @@ struct MainView: View {
 					Button(action: {
 						page = .friends
 						refreshFriends()
+						refreshHosts() // for the Connect buttons on friends
 					}, label:
 					{
 						VStack {
@@ -486,6 +489,17 @@ struct MainView: View {
 				.zIndex(1)
 			}
 			.onAppear(perform: initView)
+			// keep friend requests and friends' computers current without a manual refresh
+			.onReceive(friendsTimer) { _ in
+				guard page == .friends, !isConnecting, !ParsecBackgroundManager.shared.hasActiveConnection else { return }
+				refreshFriends()
+				refreshHosts()
+			}
+			.onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+				guard NetworkHandler.clinfo != nil, !isConnecting, !ParsecBackgroundManager.shared.hasActiveConnection else { return }
+				refreshRequests()
+				if page == .friends { refreshFriends() }
+			}
 			.onDisappear { ParsecBackgroundManager.shared.onShortcutReconnect = nil }
 			.sheet(isPresented: $showAddFriend) {
 				AddFriendView(onChange: refreshRequests, onUnauthorized: { sessionExpired = true })
@@ -765,12 +779,20 @@ struct MainView: View {
 		}
 	}
 
-	func friendRow<Actions: View>(_ user: IdentifiableUserInfo, @ViewBuilder actions: () -> Actions) -> some View {
+	func friendRow<Actions: View>(_ user: IdentifiableUserInfo, subtitle: String? = nil, @ViewBuilder actions: () -> Actions) -> some View {
 		HStack {
 			AvatarView(userId: user.id, size: 48)
-			Text("\(user.username)#\(String(user.id))")
-				.font(.system(size: 16, weight: .medium))
-				.lineLimit(1)
+			VStack(alignment: .leading, spacing: 2) {
+				Text("\(user.username)#\(String(user.id))")
+					.font(.system(size: 16, weight: .medium))
+					.lineLimit(1)
+				if let subtitle = subtitle {
+					Text(subtitle)
+						.font(.system(size: 13))
+						.opacity(0.6)
+						.lineLimit(1)
+				}
+			}
 			Spacer()
 			if friendBusy.contains(user.id) {
 				ActivityIndicator(isAnimating: .constant(true), style: .medium, tint: UIColor(named: "Foreground") ?? .white)
@@ -782,6 +804,49 @@ struct MainView: View {
 		.padding(8)
 		.background(Color("BackgroundCard"))
 		.cornerRadius(12)
+	}
+
+	// Computers this friend shares with you, from the host list.
+	func hostsOf(_ user: IdentifiableUserInfo) -> [IdentifiableHostInfo] {
+		hosts.filter { $0.user.id == user.id }
+	}
+
+	func friendHostsSubtitle(_ user: IdentifiableUserInfo) -> String? {
+		let theirs = hostsOf(user)
+		switch theirs.count {
+		case 0: return nil
+		case 1: return "\(theirs[0].hostname) is online"
+		default: return "\(theirs.count) computers online"
+		}
+	}
+
+	@ViewBuilder
+	func friendConnectButton(_ user: IdentifiableUserInfo) -> some View {
+		let theirs = hostsOf(user)
+		if theirs.count == 1 {
+			Button(action: { connectTo(theirs[0]) }) {
+				connectLabel("Connect")
+			}
+		} else if theirs.count > 1 {
+			Menu {
+				ForEach(theirs) { h in
+					Button(h.hostname) { connectTo(h) }
+				}
+			} label: {
+				connectLabel("Connect")
+			}
+		}
+	}
+
+	func connectLabel(_ text: String) -> some View {
+		Text(text)
+			.lineLimit(1)
+			.fixedSize()
+			.foregroundColor(.white)
+			.padding(.horizontal, 16)
+			.frame(minHeight: 44)
+			.background(Color("AccentColor"))
+			.cornerRadius(8)
 	}
 
 	func promptBanner(_ text: String, button: String, action: @escaping () -> Void) -> some View {
@@ -1010,6 +1075,7 @@ struct JoinLinkView: View {
 	@State private var host: PublicHost?
 	@State private var lookupError: String?
 	@State private var lookedUpFor: String?
+	@State private var recents = RecentLink.load()
 
 	private var parsed: (peer: String, secret: String?)? { ShareLink.parse(text) }
 
@@ -1100,6 +1166,48 @@ struct JoinLinkView: View {
 							.cornerRadius(12)
 						}
 
+						if parsed == nil && !recents.isEmpty {
+							Text("Recent")
+								.font(.system(size: 14, weight: .medium))
+								.opacity(0.7)
+								.padding(.top, 8)
+							ForEach(recents) { r in
+								HStack {
+									AvatarView(userId: r.userId, size: 40)
+									VStack(alignment: .leading, spacing: 2) {
+										Text(r.hostName)
+											.font(.system(size: 15, weight: .medium))
+											.lineLimit(1)
+										Text(r.userName.isEmpty ? recentDate(r.usedAt) : "\(r.userName)#\(String(r.userId)) · \(recentDate(r.usedAt))")
+											.font(.system(size: 12))
+											.opacity(0.6)
+											.lineLimit(1)
+									}
+									Spacer()
+									Button(action: { connectRecent(r) }) {
+										Text("Connect")
+											.lineLimit(1)
+											.fixedSize()
+											.foregroundColor(.white)
+											.padding(.horizontal, 14)
+											.frame(minHeight: 44)
+											.background(Color("AccentColor"))
+											.cornerRadius(8)
+									}
+									Button(action: { forgetRecent(r) }) {
+										Image(systemName: "xmark")
+											.opacity(0.5)
+											.frame(width: 44, height: 44)
+											.contentShape(Rectangle())
+									}
+									.accessibility(label: Text("Remove \(r.hostName)"))
+								}
+								.padding(8)
+								.background(Color("BackgroundCard"))
+								.cornerRadius(12)
+							}
+						}
+
 						if parsed?.secret != nil {
 							VStack(alignment: .leading, spacing: 6) {
 								Text("Secret method (testing)")
@@ -1173,7 +1281,33 @@ struct JoinLinkView: View {
 		let info = IdentifiableHostInfo(id: p.peer, hostname: host?.name ?? "shared host", user: user, connections: 0)
 		let share = p.secret.map { ShareSecret(peer: p.peer, secret: $0, method: method) }
 		appNote("[link] joining from a share link, secret \(p.secret == nil ? "missing" : "present"), method \(method.rawValue)")
+		RecentLink.remember(RecentLink(peer: p.peer, secret: p.secret, hostName: host?.name ?? "Shared host",
+									   userName: host?.user.name ?? "", userId: host?.user.id ?? 0, usedAt: Date()))
 		onConnect(info, share)
+	}
+
+	func connectRecent(_ r: RecentLink) {
+		var again = r
+		again.usedAt = Date()
+		RecentLink.remember(again)
+		let user = UserInfo(id: r.userId, name: r.userName, warp: false, team_id: "")
+		let info = IdentifiableHostInfo(id: r.peer, hostname: r.hostName, user: user, connections: 0)
+		let share = r.secret.map { ShareSecret(peer: r.peer, secret: $0, method: SecretMethod.saved) }
+		appNote("[link] joining a recent link, secret \(r.secret == nil ? "missing" : "present"), method \(SecretMethod.saved.rawValue)")
+		onConnect(info, share)
+	}
+
+	func forgetRecent(_ r: RecentLink) {
+		RecentLink.forget(r.peer)
+		withAnimation { recents = RecentLink.load() }
+	}
+
+	func recentDate(_ date: Date) -> String {
+		let f = DateFormatter()
+		f.dateStyle = .short
+		f.timeStyle = .short
+		f.doesRelativeDateFormatting = true
+		return f.string(from: date)
 	}
 }
 

@@ -239,6 +239,43 @@ enum SecretMethod: String, CaseIterable {
 	}
 }
 
+// Share links you joined before, newest first, so you can reconnect without asking for a new link.
+struct RecentLink: Codable, Identifiable {
+	var peer: String
+	var secret: String?
+	var hostName: String
+	var userName: String
+	var userId: Int
+	var usedAt: Date
+
+	var id: String { peer }
+
+	private static let key = "recentShareLinks"
+	private static let limit = 8
+
+	static func load() -> [RecentLink] {
+		guard let data = UserDefaults.standard.data(forKey: key),
+			  let list = try? JSONDecoder().decode([RecentLink].self, from: data) else { return [] }
+		return list
+	}
+
+	static func save(_ list: [RecentLink]) {
+		if let data = try? JSONEncoder().encode(Array(list.prefix(limit))) {
+			UserDefaults.standard.set(data, forKey: key)
+		}
+	}
+
+	static func remember(_ link: RecentLink) {
+		var list = load().filter { $0.peer != link.peer }
+		list.insert(link, at: 0)
+		save(list)
+	}
+
+	static func forget(_ peer: String) {
+		save(load().filter { $0.peer != peer })
+	}
+}
+
 struct ShareSecret {
 	var peer: String
 	var secret: String

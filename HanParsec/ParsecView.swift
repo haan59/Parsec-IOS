@@ -18,6 +18,7 @@ struct ParsecStatusBar: View {
 	@State var wasDisconnected: Bool = true
 	@State var liveSince: CFTimeInterval?
 	@State var seenInterfaceChanges = NetworkWatcher.shared.interfaceChanges
+	@State var samples: [StreamSample] = []
 	let timer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
 	let onSilentDisconnect: () -> Void
 
@@ -43,6 +44,12 @@ struct ParsecStatusBar: View {
 					.font(.system(size: 10))
 					.lineSpacing(20)
 					.lineLimit(nil)
+				if samples.count > 1 {
+					StreamGraph(samples: samples)
+						.frame(maxWidth: 420)
+						.padding(.horizontal, 8)
+						.padding(.bottom, 6)
+				}
 			}
 			.background(Rectangle().fill(Color("BackgroundPrompt").opacity(0.75)))
 			.foregroundColor(Color("Foreground"))
@@ -247,6 +254,12 @@ struct ParsecStatusBar: View {
 			let str = String.fromBuffer(&pcs.decoder.0.name.0, length: 16)
 			metricInfo = "Decode \(String(format: "%.2f", pcs.`self`.metrics.0.decodeLatency))ms    Encode \(String(format: "%.2f", pcs.`self`.metrics.0.encodeLatency))ms    Network \(String(format: "%.2f", pcs.`self`.metrics.0.networkLatency))ms    Bitrate \(String(format: "%.2f", pcs.`self`.metrics.0.bitrate))Mbps    RTx \(pcs.`self`.metrics.0.fastRTs + pcs.`self`.metrics.0.slowRTs)    Queue \(pcs.`self`.metrics.0.queuedFrames)    Draw \(String(format: "%.0f", CParsec.drawRate))fps \(CParsec.rendererName)    \(pcs.decoder.0.h265 ? "H265" : "H264") \(pcs.decoder.0.width)x\(pcs.decoder.0.height) \(pcs.decoder.0.color444 ? "4:4:4" : "4:2:0") \(str)"
 		}
+
+		// last 30 s for the stream graph
+		let m = pcs.`self`.metrics.0
+		samples.append(StreamSample(network: Double(m.networkLatency), decode: Double(m.decodeLatency), encode: Double(m.encodeLatency), frameGap: CParsec.frameGapMax))
+		CParsec.frameGapMax = 0
+		if samples.count > 60 { samples.removeFirst(samples.count - 60) }
 	}
 
 
@@ -983,6 +996,93 @@ private extension View {
 			return self.persistentSystemOverlays(.hidden)
 		} else {
 			return self
+		}
+	}
+}
+
+struct StreamSample {
+	var network: Double
+	var decode: Double
+	var encode: Double
+	var frameGap: Double
+}
+
+// Last 30 seconds of stream timings, so a stutter every few seconds shows up as a spike
+// and its line says where it came from: network, host encoder, phone decoder, or frames arriving late.
+struct StreamGraph: View {
+	let samples: [StreamSample]
+
+	private struct Series {
+		let name: String
+		let color: Color
+		let value: (StreamSample) -> Double
+	}
+
+	private var series: [Series] {
+		var list = [
+			Series(name: "Network", color: Color(red: 0.35, green: 0.65, blue: 1.0), value: { $0.network }),
+			Series(name: "Encode", color: .orange, value: { $0.encode }),
+			Series(name: "Decode", color: .green, value: { $0.decode })
+		]
+		// frame timing comes from the Metal renderer; OpenGL is drawn inside the SDK
+		if CParsec.runningRenderer == .metal {
+			list.append(Series(name: "Frame gap", color: .red, value: { $0.frameGap }))
+		}
+		return list
+	}
+
+	var body: some View {
+		let all = series
+		let peak = samples.flatMap { s in all.map { $0.value(s) } }.max() ?? 0
+		let top = min(max(50, peak * 1.1), 500)
+		VStack(alignment: .leading, spacing: 3) {
+			GeometryReader { geo in
+				ZStack(alignment: .topLeading) {
+					// one frame at 60 FPS, for scale
+					Path { p in
+						let y = geo.size.height * CGFloat(1 - 16.7 / top)
+						p.move(to: CGPoint(x: 0, y: y))
+						p.addLine(to: CGPoint(x: geo.size.width, y: y))
+					}
+					.stroke(Color.white.opacity(0.25), style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+					ForEach(0..<all.count, id: \.self) { i in
+						line(all[i], in: geo.size, top: top)
+							.stroke(all[i].color, lineWidth: 1.5)
+					}
+					Text("\(Int(top)) ms")
+						.font(.system(size: 9))
+						.opacity(0.6)
+				}
+			}
+			.frame(height: 60)
+			HStack(spacing: 10) {
+				ForEach(0..<all.count, id: \.self) { i in
+					legend(all[i])
+				}
+			}
+			.font(.system(size: 9))
+		}
+	}
+
+	private func line(_ s: Series, in size: CGSize, top: Double) -> Path {
+		Path { p in
+			for (i, sample) in samples.enumerated() {
+				let x = size.width * CGFloat(i) / 59
+				let v = min(max(s.value(sample), 0), top)
+				let y = size.height * CGFloat(1 - v / top)
+				if i == 0 { p.move(to: CGPoint(x: x, y: y)) } else { p.addLine(to: CGPoint(x: x, y: y)) }
+			}
+		}
+	}
+
+	private func legend(_ s: Series) -> some View {
+		let now = samples.last.map(s.value) ?? 0
+		let peak = samples.map(s.value).max() ?? 0
+		return HStack(spacing: 3) {
+			Circle().fill(s.color).frame(width: 6, height: 6)
+			Text("\(s.name) \(Int(now.rounded()))")
+			Text("max \(Int(peak.rounded()))")
+				.opacity(0.6)
 		}
 	}
 }

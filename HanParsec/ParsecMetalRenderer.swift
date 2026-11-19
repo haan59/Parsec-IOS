@@ -80,6 +80,8 @@ class ParsecMetalRenderer: NSObject, MTKViewDelegate {
 		planes = [nil, nil, nil]
 		current = -1
 		lastDrawAt = 0
+		CParsec.lastFrameAt = 0
+		CParsec.frameGapMax = 0
 		drawIntervals.removeAll()
 	}
 
@@ -99,6 +101,11 @@ class ParsecMetalRenderer: NSObject, MTKViewDelegate {
 		p.c.replace(region: MTLRegionMake2D(0, 0, (w + 1) / 2, (h + 1) / 2), mipmapLevel: 0, withBytes: image + stride * rows, bytesPerRow: stride)
 		current = slot
 		frameSize = CGSize(width: w, height: h)
+		let now = CACurrentMediaTime()
+		if CParsec.lastFrameAt > 0 {
+			CParsec.frameGapMax = max(CParsec.frameGapMax, (now - CParsec.lastFrameAt) * 1000)
+		}
+		CParsec.lastFrameAt = now
 		if #available(iOS 15.0, *) {
 			PictureInPictureManager.shared.feedFrame(f, image)
 		}

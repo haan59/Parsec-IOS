@@ -192,6 +192,9 @@ class CParsec {
 	static var setupError: (line: String, at: Date)?
 	// Set when joining from a share link. Used for every connect to that peer, so retries and reconnects keep it.
 	static var shareSecret: ShareSecret?
+	// Longest wait between two decoded frames (ms) since the stats last read it. Metal only.
+	static var frameGapMax: Double = 0
+	static var lastFrameAt: CFTimeInterval = 0
 
 	static var parsecImpl: ParsecService!
 
