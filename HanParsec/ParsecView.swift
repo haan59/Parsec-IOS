@@ -512,6 +512,14 @@ struct ParsecView: View {
 				if muted { CParsec.pause(video: false, audio: true) }
 			}
 		}
+		.onChange(of: dataModel.hostNotice) { notice in
+			guard let notice = notice else { return }
+			withAnimation { hint = notice }
+			DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+				withAnimation { if hint == notice { hint = nil } }
+				DataManager.model.hostNotice = nil
+			}
+		}
 		.onChange(of: dataModel.hostFps) { _ in
 			if SettingsHandler.preferredFramesPerSecond == -1 { parsecViewController.applyFrameRate() }
 		}

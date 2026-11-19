@@ -131,6 +131,9 @@ class ParsecSDKBridge: ParsecService {
 		}
 	}
 	var didSetResolution = false
+	// what the last setVideoConfig asked for, checked against the host's next video config
+	var expectedFullFPS: Bool?
+	var expectedOutput: String?
 	private var didReleaseOnConnect = false
 	private var capsLock = false
 
@@ -388,10 +391,22 @@ class ParsecSDKBridge: ParsecService {
 		case 11:
 			do {
 				let decoder = JSONDecoder()
-				let config = try decoder.decode(ParsecUserDataVideoConfig.self, from: Data(bytesNoCopy: pointer!, count: strlen(pointer!), deallocator: .none))
+				let raw = Data(bytes: pointer!, count: strlen(pointer!))
+				let config = try decoder.decode(ParsecUserDataVideoConfig.self, from: raw)
 				let videoConfig = config.video.first
+				let rawText = String(data: raw, encoding: .utf8)?.prefix(300) ?? ""
 				DispatchQueue.main.async {
+					appNote("[video] host \(rawText)")
 					if let cfg = videoConfig {
+						if let want = self.expectedFullFPS, want != cfg.fullFPS {
+							DataManager.model.hostNotice = "The host kept Constant Frame Rate \(cfg.fullFPS ? "ON" : "OFF")"
+						}
+						if let want = self.expectedOutput, want != "none", want != cfg.output {
+							appNote("[video] asked for display \(want), host reports \(cfg.output)")
+							DataManager.model.hostNotice = "The host did not switch display"
+						}
+						self.expectedFullFPS = nil
+						self.expectedOutput = nil
 						DataManager.model.resolutionX = cfg.resolutionX
 						DataManager.model.resolutionY = cfg.resolutionY
 						DataManager.model.bitrate = cfg.encoderMaxBitrate
@@ -746,6 +761,13 @@ class ParsecSDKBridge: ParsecService {
 		videoConfig.video[0].output = DataManager.model.output
 		let encoder = JSONEncoder()
 		let data = try! encoder.encode(videoConfig)
+		appNote("[video] sent \(String(data: data, encoding: .utf8)?.prefix(220) ?? "")")
 		CParsec.sendUserData(type: .setVideoConfig, message: data)
+		// ask the host what it actually applied, so a refused change shows up instead of silently flipping back
+		expectedFullFPS = videoConfig.video[0].fullFPS
+		expectedOutput = videoConfig.video[0].output
+		DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+			CParsec.sendUserData(type: .getVideoConfig, message: Data())
+		}
 	}
 }
