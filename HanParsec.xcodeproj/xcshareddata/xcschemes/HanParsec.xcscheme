@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "27E61A8D292965FC00FF6563"
-               BuildableName = "HanParsec.app"
+               BuildableName = "OpenParsec.app"
                BlueprintName = "HanParsec"
                ReferencedContainer = "container:HanParsec.xcodeproj">
             </BuildableReference>
@@ -45,7 +45,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "27E61A8D292965FC00FF6563"
-            BuildableName = "HanParsec.app"
+            BuildableName = "OpenParsec.app"
             BlueprintName = "HanParsec"
             ReferencedContainer = "container:HanParsec.xcodeproj">
          </BuildableReference>
@@ -62,7 +62,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "27E61A8D292965FC00FF6563"
-            BuildableName = "HanParsec.app"
+            BuildableName = "OpenParsec.app"
             BlueprintName = "HanParsec"
             ReferencedContainer = "container:HanParsec.xcodeproj">
          </BuildableReference>
