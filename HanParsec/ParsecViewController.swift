@@ -61,6 +61,9 @@ class ParsecViewController: UIViewController, UIScrollViewDelegate, ParsecTouchI
 	// Input-driven cursor + viewport state (manual touch handling via TouchOverlayView).
 	var touchOverlay: TouchOverlayView!
 	var cursorContentPos: CGPoint = .zero
+	// Stretch to Fill scale applied to the render view. cursorContentPos stays in the SDK's
+	// letterboxed space; toSDK / fromSDK convert to and from what is actually on screen.
+	private(set) var stretch = CGSize(width: 1, height: 1)
 	var isDragging = false
 	var twoFingerResidual = false       // leftover finger after a 2-finger gesture; inert until full lift
 	var activeTouches: [UITouch] = []   // ordered; first two drive pinch / scroll
@@ -129,8 +132,8 @@ class ParsecViewController: UIViewController, UIScrollViewDelegate, ParsecTouchI
 	func computeRenderScale() -> CGFloat {
 		let nativeScale = UIScreen.main.nativeScale
 		guard scrollView.zoomScale > 1.01 else { return nativeScale }
-		let vw = glkView.renderView.frame.size.width
-		let vh = glkView.renderView.frame.size.height
+		let vw = glkView.renderView.bounds.size.width
+		let vh = glkView.renderView.bounds.size.height
 		let sw = CGFloat(CParsec.hostWidth)
 		let sh = CGFloat(CParsec.hostHeight)
 		guard vw > 0, vh > 0, sw > 0, sh > 0 else { return nativeScale }
@@ -151,6 +154,7 @@ class ParsecViewController: UIViewController, UIScrollViewDelegate, ParsecTouchI
 
 	func updateImage() {
 		updateRenderScale()
+		updateStretch()
         // Optimization: Snap current valus
         let currentMouseX = CParsec.mouseInfo.mouseX
         let currentMouseY = CParsec.mouseInfo.mouseY
@@ -587,7 +591,7 @@ class ParsecViewController: UIViewController, UIScrollViewDelegate, ParsecTouchI
 	func pictureShiftAboveKeyboard(_ keyboard: CGFloat) -> CGFloat? {
 		let w = view.bounds.width, h = view.bounds.height
 		guard keyboard > 0, CParsec.hostWidth > 0, CParsec.hostHeight > 0 else { return nil }
-		let picture = min(h, w * CGFloat(CParsec.hostHeight / CParsec.hostWidth))
+		let picture = min(h, w * CGFloat(CParsec.hostHeight / CParsec.hostWidth) * stretch.height)
 		guard picture <= h - keyboard else { return nil }
 		return keyboard - (h - picture) / 2
 	}
@@ -809,7 +813,7 @@ extension ParsecViewController: UIGestureRecognizerDelegate {
 		singleTouchStartScreen = activeTouches.first?.location(in: view) ?? .zero
 		if SettingsHandler.cursorMode == .direct {
 			if let t = activeTouches.first {
-				cursorContentPos = clampToContent(contentView.convert(t.location(in: view), from: view))
+				cursorContentPos = clampToContent(contentPoint(t.location(in: view)))
 				CParsec.sendMousePosition(Int32(cursorContentPos.x), Int32(cursorContentPos.y))
 				positionCursorOverlay()
 			}
@@ -867,13 +871,14 @@ extension ParsecViewController: UIGestureRecognizerDelegate {
 		}
 
 		if SettingsHandler.cursorMode == .direct {
-			cursorContentPos = clampToContent(contentView.convert(loc, from: view))
+			cursorContentPos = clampToContent(contentPoint(loc))
 		} else {
 			// Relative finger movement, predicted locally; sensitivity scales down with zoom so the
 			// cursor tracks the visible finger.
 			let s = CGFloat(mouseSensitivity) / zoom
-			let dcx = (loc.x - prev.x) * s
-			let dcy = (loc.y - prev.y) * s
+			// divided by the stretch so the cursor still follows the finger 1:1 on screen
+			let dcx = (loc.x - prev.x) * s / stretch.width
+			let dcy = (loc.y - prev.y) * s / stretch.height
 			cursorContentPos = clampToContent(CGPoint(x: cursorContentPos.x + dcx, y: cursorContentPos.y + dcy))
 			// Smoothed velocity so a quick flick keeps gliding after the finger lifts.
 			let now = CACurrentMediaTime()
@@ -1059,17 +1064,57 @@ extension ParsecViewController: UIGestureRecognizerDelegate {
 		let bottomInset = keyboardVisible ? keyboardHeight : 0.0
 		let centerX = (scrollView.bounds.width / 2 + scrollView.contentOffset.x) / newZoom
 		let centerY = ((scrollView.bounds.height - bottomInset) / 2 + scrollView.contentOffset.y) / newZoom
-		cursorContentPos = clampToContent(CGPoint(x: centerX, y: centerY))
+		cursorContentPos = clampToContent(toSDK(CGPoint(x: centerX, y: centerY)))
 		if !CParsec.mouseInfo.mousePositionRelative {
 			CParsec.sendMousePosition(Int32(cursorContentPos.x), Int32(cursorContentPos.y))
 		}
 		positionCursorOverlay()
 	}
 
+	// Keeps the cursor on the part of the picture that is on screen. Without stretch that is the
+	// whole view; stretched, the SDK only sees the letterboxed rect that now covers the screen.
 	private func clampToContent(_ p: CGPoint) -> CGPoint {
 		let w = view.bounds.width
 		let h = view.bounds.height
-		return CGPoint(x: min(max(0, p.x), w), y: min(max(0, p.y), h))
+		let halfW = w / 2 / stretch.width, halfH = h / 2 / stretch.height
+		return CGPoint(x: min(max(w / 2 - halfW, p.x), w / 2 + halfW),
+					   y: min(max(h / 2 - halfH, p.y), h / 2 + halfH))
+	}
+
+	// Scales the render view so the letterboxed picture covers the whole view (Stretch to Fill),
+	// or back to normal. Cheap enough to call every frame; only acts when something changed.
+	func updateStretch() {
+		var s = CGSize(width: 1, height: 1)
+		let b = contentView?.bounds.size ?? .zero
+		let hw = CGFloat(CParsec.hostWidth), hh = CGFloat(CParsec.hostHeight)
+		if SettingsHandler.stretchToFill, b.width > 0, b.height > 0, hw > 0, hh > 0 {
+			let fit = min(b.width / hw, b.height / hh)
+			s = CGSize(width: b.width / (hw * fit), height: b.height / (hh * fit))
+		}
+		guard abs(s.width - stretch.width) > 0.001 || abs(s.height - stretch.height) > 0.001 else { return }
+		stretch = s
+		// the scaled view overhangs its container by the (black) letterbox bars; keep them clipped
+		contentView.clipsToBounds = true
+		glkView.renderView.transform = CGAffineTransform(scaleX: s.width, y: s.height)
+		cursorContentPos = clampToContent(cursorContentPos)
+		positionCursorOverlay()
+	}
+
+	// On-screen content point -> SDK (letterboxed) point.
+	private func toSDK(_ p: CGPoint) -> CGPoint {
+		let c = CGPoint(x: contentView.bounds.midX, y: contentView.bounds.midY)
+		return CGPoint(x: c.x + (p.x - c.x) / stretch.width, y: c.y + (p.y - c.y) / stretch.height)
+	}
+
+	// SDK (letterboxed) point -> on-screen content point.
+	private func fromSDK(_ p: CGPoint) -> CGPoint {
+		let c = CGPoint(x: contentView.bounds.midX, y: contentView.bounds.midY)
+		return CGPoint(x: c.x + (p.x - c.x) * stretch.width, y: c.y + (p.y - c.y) * stretch.height)
+	}
+
+	// A point in the root view (a touch) -> SDK point.
+	private func contentPoint(_ screen: CGPoint) -> CGPoint {
+		toSDK(contentView.convert(screen, from: view))
 	}
 
 	// Places the cursor overlay at the cursor's content position projected into screen space,
@@ -1078,8 +1123,9 @@ extension ParsecViewController: UIGestureRecognizerDelegate {
 		guard let u = u else { return }
 		let zoom = scrollView.zoomScale
 		let off = scrollView.contentOffset
-		let screenX = cursorContentPos.x * zoom - off.x
-		let screenY = cursorContentPos.y * zoom - off.y
+		let shown = fromSDK(cursorContentPos)
+		let screenX = shown.x * zoom - off.x
+		let screenY = shown.y * zoom - off.y
 		let cs = CGFloat(SettingsHandler.cursorScale)
 		let hotX = CGFloat(CParsec.mouseInfo.cursorHotX) * cs
 		let hotY = CGFloat(CParsec.mouseInfo.cursorHotY) * cs
@@ -1093,7 +1139,7 @@ extension ParsecViewController: UIGestureRecognizerDelegate {
 		if cursorDidMoveThisTouch { return }
 		if SettingsHandler.cursorMode == .direct { return }
 		let location = gestureRecognizer.location(in: gestureRecognizer.view)
-		let adjustedLocation = contentView.convert(location, from: view)
+		let adjustedLocation = contentPoint(location)
 		touchController.onTap(typeOfTap: 1, location: adjustedLocation)
 	}
 
@@ -1114,7 +1160,7 @@ extension ParsecViewController: UIGestureRecognizerDelegate {
 			location = gestureRecognizer.location(in: gestureRecognizer.view)
 		}
 
-		let adjustedLocation = contentView.convert(location, from: view)
+		let adjustedLocation = contentPoint(location)
 		touchController.onTap(typeOfTap: 3, location: adjustedLocation)
 	}
 
@@ -1181,8 +1227,9 @@ extension ParsecViewController: UIGestureRecognizerDelegate {
 		let bottomInset = keyboardVisible ? keyboardHeight : 0.0
 		let visibleWidth = view.bounds.width
 		let visibleHeight = view.bounds.height - bottomInset
-		let cursorX = cursorContentPos.x * zoom
-		let cursorY = cursorContentPos.y * zoom
+		let shown = fromSDK(cursorContentPos)
+		let cursorX = shown.x * zoom
+		let cursorY = shown.y * zoom
 		var targetX = cursorX - visibleWidth / 2
 		var targetY = cursorY - visibleHeight / 2
 		let maxX = max(0, scrollView.contentSize.width - scrollView.bounds.width)
@@ -1217,7 +1264,7 @@ extension ParsecViewController: UIGestureRecognizerDelegate {
 		let next = CGPoint(x: min(max(0, off.x + v.x * dt), maxX), y: min(max(0, off.y + v.y * dt), maxY))
 		guard next != off else { return false }
 		scrollView.setContentOffset(next, animated: false)
-		cursorContentPos = clampToContent(contentView.convert(edgeScrollPoint, from: view))
+		cursorContentPos = clampToContent(contentPoint(edgeScrollPoint))
 		CParsec.sendMousePosition(Int32(cursorContentPos.x), Int32(cursorContentPos.y))
 		positionCursorOverlay()
 		return true

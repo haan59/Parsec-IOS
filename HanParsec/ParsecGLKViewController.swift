@@ -82,8 +82,9 @@ class ParsecGLKViewController: ParsecPlayground {
 	}
 
 	func updateSize(width: CGFloat, height: CGFloat) {
-		glkView.frame.size.width = width
-		glkView.frame.size.height = height
+		// bounds + center, not frame: the view may carry a Stretch to Fill transform
+		glkView.bounds = CGRect(x: 0, y: 0, width: width, height: height)
+		glkView.center = CGPoint(x: width / 2, y: height / 2)
 	}
 
 }

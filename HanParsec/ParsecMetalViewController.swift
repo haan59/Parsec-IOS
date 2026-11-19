@@ -33,7 +33,8 @@ class ParsecMetalViewController: ParsecPlayground {
 	}
 
 	func updateSize(width: CGFloat, height: CGFloat) {
-		metalView.frame.size.width = width
-		metalView.frame.size.height = height
+		// bounds + center, not frame: the view may carry a Stretch to Fill transform
+		metalView.bounds = CGRect(x: 0, y: 0, width: width, height: height)
+		metalView.center = CGPoint(x: width / 2, y: height / 2)
 	}
 }

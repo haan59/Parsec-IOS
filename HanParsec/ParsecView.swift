@@ -603,6 +603,12 @@ struct ParsecView: View {
 							.frame(maxWidth: .infinity)
 							.multilineTextAlignment(.center)
 					}
+					Button(action: toggleStretch) {
+						Text("Stretch to Fill: \(settingsStore.stretchToFill ? "ON" : "OFF")")
+							.padding(8)
+							.frame(maxWidth: .infinity)
+							.multilineTextAlignment(.center)
+					}
 					Button(action: toggleTouchMode) {
 						Text("Touch Mode: \(settingsStore.cursorMode == .direct ? "Direct" : "Touchpad")")
 							.padding(8)
@@ -938,6 +944,13 @@ struct ParsecView: View {
 			zoomEnabled.toggle()
 			parsecViewController.setZoomEnabled(zoomEnabled)
 			SettingsHandler.zoomEnabled = zoomEnabled
+		}
+	}
+
+	func toggleStretch() {
+		DispatchQueue.main.async {
+			SettingsHandler.stretchToFill.toggle()
+			parsecViewController.updateStretch()
 		}
 	}
 

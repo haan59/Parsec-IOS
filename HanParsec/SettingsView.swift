@@ -105,6 +105,10 @@ struct SettingsView: View {
 								CatItem("Resolution") {
 									MultiPicker(selection: $settings.resolution, options: resolutionChoices)
 								}
+								CatItem("Stretch to Fill") {
+									Toggle("", isOn: $settings.stretchToFill)
+										.frame(width: 80)
+								}
 								CatItem("Bitrate") {
 									MultiPicker(selection: $settings.bitrate, options: [Choice("Host Default", 0)] + ParsecResolution.bitrates.map { Choice("\($0) Mbps", $0) })
 								}

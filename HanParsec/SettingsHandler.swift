@@ -31,7 +31,8 @@ final class SettingsStore: ObservableObject {
 			"showConnectionLog": true,
 			"autoConnectOnLaunch": false,
 			"savedZoomEnabled": false,
-			"savedConstantFps": false
+			"savedConstantFps": false,
+			"stretchToFill": false
 		])
 		// values saved back when saving was off would now always apply
 		if defaults.object(forKey: "saveSessionSettings") as? Bool == false {
@@ -170,6 +171,12 @@ final class SettingsStore: ObservableObject {
 		get { defaults.bool(forKey: "savedConstantFps") }
 		set { store(newValue, "savedConstantFps") }
 	}
+
+	// Stretch the picture to cover the whole screen instead of letterboxing it.
+	var stretchToFill: Bool {
+		get { defaults.bool(forKey: "stretchToFill") }
+		set { store(newValue, "stretchToFill") }
+	}
 }
 
 struct SettingsHandler {
@@ -198,4 +205,5 @@ struct SettingsHandler {
 	static var autoConnectOnLaunch: Bool { get { SettingsStore.shared.autoConnectOnLaunch } set { SettingsStore.shared.autoConnectOnLaunch = newValue } }
 	static var zoomEnabled: Bool { get { SettingsStore.shared.zoomEnabled } set { SettingsStore.shared.zoomEnabled = newValue } }
 	static var constantFps: Bool { get { SettingsStore.shared.constantFps } set { SettingsStore.shared.constantFps = newValue } }
+	static var stretchToFill: Bool { get { SettingsStore.shared.stretchToFill } set { SettingsStore.shared.stretchToFill = newValue } }
 }
