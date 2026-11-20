@@ -465,6 +465,15 @@ struct ParsecView: View {
 							Spacer()
 						}
 					}
+					if !hideOverlay && settingsStore.showMouseButtons {
+						HStack(spacing: 6) {
+							MouseHoldButton(label: "L", button: 1)
+							MouseHoldButton(label: "R", button: 3)
+							Spacer()
+						}
+						.padding(.leading)
+						.padding(.top, 6)
+					}
 					if showMenu && verticalSizeClass != .compact {
 						HStack {
 							menuPanel
@@ -1018,6 +1027,41 @@ struct ParsecView: View {
 		CParsec.sendUserData(type: .getAdapterInfo, message: data)
 	}
 
+}
+
+// On-screen mouse button: down while the finger is on it, up on lift, so holding it and
+// moving the cursor with another finger drags.
+struct MouseHoldButton: View {
+	let label: String
+	let button: UInt32 // 1 = left, 3 = right
+	@State private var pressed = false
+
+	var body: some View {
+		Text(label)
+			.font(.system(size: 16, weight: .bold))
+			.foregroundColor(Color("Foreground"))
+			.frame(width: 48, height: 40)
+			.background(Rectangle().fill(Color("BackgroundPrompt").opacity(pressed ? 0.9 : 0.5)))
+			.cornerRadius(8)
+			.contentShape(Rectangle())
+			.gesture(DragGesture(minimumDistance: 0)
+				.onChanged { _ in
+					if !pressed { pressed = true; send(true) }
+				}
+				.onEnded { _ in
+					if pressed { pressed = false; send(false) }
+				})
+			.onDisappear {
+				// never leave the button held on the host
+				if pressed { pressed = false; send(false) }
+			}
+	}
+
+	private func send(_ down: Bool) {
+		guard ParsecBackgroundManager.shared.hasActiveConnection else { return }
+		CParsec.sendMouseClickMessage(ParsecMouseButton(rawValue: button), down)
+		if down { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+	}
 }
 
 // from https://github.com/utmapp/UTM/blob/117e3a962f2f46f7d847632d65fa7a85a2bb0cfa/Platform/iOS/VMWindowView.swift#L314

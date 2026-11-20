@@ -88,6 +88,10 @@ struct SettingsView: View {
 									Toggle("", isOn: $settings.showKeyboardButton)
 										.frame(width: 80)
 								}
+								CatItem("Show Mouse Buttons") {
+									Toggle("", isOn: $settings.showMouseButtons)
+										.frame(width: 80)
+								}
 								CatItem("Option Key as Command") {
 									Toggle("", isOn: $settings.optionAsCommand)
 										.frame(width: 80)

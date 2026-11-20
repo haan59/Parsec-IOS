@@ -309,7 +309,7 @@ class ParsecViewController: UIViewController, UIScrollViewDelegate, ParsecTouchI
 		let longPressGestureRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
 		longPressGestureRecognizer.numberOfTouchesRequired = 1
 		longPressGestureRecognizer.allowedTouchTypes = [0, 2]
-		longPressGestureRecognizer.allowableMovement = 40
+		longPressGestureRecognizer.allowableMovement = 10
 		// Don't cancel the overlay's touch, so the click-hold button can be released on lift.
 		longPressGestureRecognizer.cancelsTouchesInView = false
 		view.addGestureRecognizer(longPressGestureRecognizer)
@@ -1174,6 +1174,9 @@ extension ParsecViewController: UIGestureRecognizerDelegate {
 		}
 		switch gestureRecognizer.state {
 		case .began:
+			// A finger that already moved the cursor is a slow drag, not a hold: holding the button
+			// there turned every lift into a click on the host.
+			if cursorDidMoveThisTouch { return }
 			// Click-and-hold (file drag): hold the left button; the overlay keeps moving the cursor.
 			clickHoldActive = true
 			CParsec.sendMouseClickMessage(ParsecMouseButton.init(rawValue: 1), true)

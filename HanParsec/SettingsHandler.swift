@@ -33,6 +33,7 @@ final class SettingsStore: ObservableObject {
 			"savedZoomEnabled": false,
 			"savedConstantFps": false,
 			"stretchToFill": false,
+			"showMouseButtons": true,
 			"streamOrientation": StreamOrientation.landscape.rawValue
 		])
 		// values saved back when saving was off would now always apply
@@ -177,6 +178,12 @@ final class SettingsStore: ObservableObject {
 	var stretchToFill: Bool {
 		get { defaults.bool(forKey: "stretchToFill") }
 		set { store(newValue, "stretchToFill") }
+	}
+
+	// On-screen left/right mouse buttons under the keyboard button.
+	var showMouseButtons: Bool {
+		get { defaults.bool(forKey: "showMouseButtons") }
+		set { store(newValue, "showMouseButtons") }
 	}
 
 	// Orientation the stream screen is locked to.
